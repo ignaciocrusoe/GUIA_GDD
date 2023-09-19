@@ -34,3 +34,16 @@ FROM Producto LEFT JOIN Composicion ON  prod_codigo = comp_producto
 WHERE prod_codigo IN (SELECT prod_codigo FROM STOCK GROUP BY stoc_producto HAVING AVG(stoc_cantidad) > 100)
 GROUP BY prod_codigo, prod_detalle
 ORDER BY COUNT(comp_componente) DESC
+
+/*EJERCICIO 5*/
+/*Realizar una consulta que muestre código de artículo, detalle y cantidad de egresos de
+stock que se realizaron para ese artículo en el año 2012 (egresan los productos que
+fueron vendidos). Mostrar solo aquellos que hayan tenido más egresos que en el 2011*/
+SELECT prod_codigo, prod_detalle, SUM(item_cantidad) Egresos FROM Producto
+	JOIN item_factura ON prod_codigo = item_producto
+	JOIN Factura ON fact_tipo + fact_sucursal + fact_numero = item_tipo + item_sucursal + item_numero
+WHERE YEAR(fact_fecha) = 2012
+GROUP BY prod_codigo, prod_detalle
+HAVING SUM(item_cantidad) > (SELECT SUM(item_cantidad) FROM item_factura
+	JOIN Factura ON fact_tipo + fact_sucursal + fact_numero = item_tipo + item_sucursal + item_numero
+WHERE YEAR(fact_fecha) = 2011 AND prod_codigo = item_producto)

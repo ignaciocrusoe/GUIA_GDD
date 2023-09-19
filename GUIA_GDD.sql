@@ -47,3 +47,16 @@ GROUP BY prod_codigo, prod_detalle
 HAVING SUM(item_cantidad) > (SELECT SUM(item_cantidad) FROM item_factura
 	JOIN Factura ON fact_tipo + fact_sucursal + fact_numero = item_tipo + item_sucursal + item_numero
 WHERE YEAR(fact_fecha) = 2011 AND prod_codigo = item_producto)
+
+/*EJERCICIO 6*/
+/*Mostrar para todos los rubros de artículos código, detalle, cantidad de artículos de ese
+rubro y stock total de ese rubro de artículos. Solo tener en cuenta aquellos artículos que
+tengan un stock mayor al del artículo ‘00000000’ en el depósito ‘00’.*/
+SELECT rubr_id, rubr_detalle, COUNT(DISTINCT prod_codigo) 'Cantidad de productos', SUM(stoc_cantidad) stock
+	FROM Rubro LEFT JOIN producto ON prod_rubro = rubr_id
+	LEFT JOIN stock ON stoc_producto = prod_codigo
+	GROUP BY rubr_id, rubr_detalle
+	HAVING SUM(stoc_cantidad) >
+	(SELECT stoc_cantidad FROM Stock
+	WHERE stoc_producto = '00000000' AND stoc_deposito = '00')
+	ORDER BY rubr_id

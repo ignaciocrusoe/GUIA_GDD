@@ -60,3 +60,12 @@ SELECT rubr_id, rubr_detalle, COUNT(DISTINCT prod_codigo) 'Cantidad de productos
 	(SELECT stoc_cantidad FROM Stock
 	WHERE stoc_producto = '00000000' AND stoc_deposito = '00')
 	ORDER BY rubr_id
+
+/*EJERCICIO 8*/
+/*Mostrar para el o los artículos que tengan stock en todos los depósitos, nombre del
+artículo, stock del depósito que más stock tiene.*/
+SELECT prod_detalle, MAX(stoc_cantidad) stock
+FROM Producto JOIN STOCK ON prod_codigo = stoc_producto
+WHERE stoc_cantidad > 0
+GROUP BY prod_detalle
+HAVING COUNT(*) = (SELECT COUNT(*) -25 FROM DEPOSITO)

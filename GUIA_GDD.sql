@@ -69,3 +69,34 @@ FROM Producto JOIN STOCK ON prod_codigo = stoc_producto
 WHERE stoc_cantidad > 0
 GROUP BY prod_detalle
 HAVING COUNT(*) = (SELECT COUNT(*) -25 FROM DEPOSITO)
+
+/*EJERCICIO 9*/
+/*Mostrar el código del jefe, código del empleado que lo tiene como jefe, nombre del
+mismo y la cantidad de depósitos que ambos tienen asignados.*/
+SELECT empl_jefe, empl_codigo, rtrim(empl_nombre) + ' ' + rtrim(empl_apellido) Nombre,
+	count(DISTICT d2.depo_codigo), count(DISTICT d2.depo_encargado)
+FROM Empleado JOIN DEPOSITO ON depo_encargado = empl_codigo OR depo_encargado = empl_jefe
+	LEFT JOIN deposito d2 ON d2.depo_encargado = empl_jefe
+GROUP BY empl_jefe, empl_codigo, rtrim(empl_nombre) + ' ' + rtrim(empl_apellido)
+
+/*EJERCICIO 10*/
+/*Mostrar los 10 productos más vendidos en la historia y también los 10 productos menos
+vendidos en la historia. Además mostrar de esos productos, quien fue el cliente que
+mayor compra realizo.*/
+SELECT prod_detalle,
+(SELECT TOP 1 fact_cliente FROM Factura
+JOIN item_factura ON fact_tipo + fact_sucursal + fact_numero = item_tipo + item_sucursal + item_numero
+WHERE item_producto = prod_codigo
+GROUP BY fact_cliente
+ORDER BY SUM(item_cantidad) DESC)
+FROM Producto
+WHERE prod_codigo IN
+(SELECT TOP 10 item_producto
+FROM Item_Factura
+GROUP BY item_producto
+ORDER BY SUM (item_cantidad) DESC)
+OR prod_codigo IN
+(SELECT TOP 10 item_producto
+FROM Item_Factura
+GROUP BY item_producto
+ORDER BY SUM (item_cantidad) ASC)

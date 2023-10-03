@@ -100,3 +100,22 @@ OR prod_codigo IN
 FROM Item_Factura
 GROUP BY item_producto
 ORDER BY SUM (item_cantidad) ASC)
+
+/*EJERCICIO 11*/
+/*Realizar una consulta que retorne el detalle de la familia, la cantidad diferentes de
+productos vendidos y el monto de dichas ventas sin impuestos. Los datos se deberán
+ordenar de mayor a menor, por la familia que más productos diferentes vendidos tenga,
+solo se deberán mostrar las familias que tengan una venta superior a 20000 pesos para
+el año 2012.*/
+SELECT fami_detalle, COUNT(DISTINCT item_producto), SUM(item_precio * item_cantidad)
+FROM Familia JOIN Producto ON fami_id P prod_familia
+	JOIN Item_factura ON prod_codigo = item_producto
+WHERE fami_id IN
+	(SELECT prod_familia
+	FROM Producto JOIN Item_factura ON prod_codigo = item_producto
+	JOIN Factura ON fact_tipo + fact_sucursal + fact_numero = item_tipo + item_sucursal + item_numero
+	WHERE YEAR(fact_fecha) = 2012
+	GROUP BY prod_familia
+	HAVING SUM(item_cantidad * item_precio) > 20000)
+GROUP BY fami_id, fami_detalle
+ORDER BY 2 DESC

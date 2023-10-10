@@ -20,3 +20,19 @@ BEGIN
 END
 
 SELECT stoc_producto, stoc_deposito, dbo.ej1(stoc_producto, stoc_deposito) FROM stock
+
+/*EJERCICIO 4*/
+/*Cree el/los objetos de base de datos necesarios para actualizar la columna de
+empleado empl_comision con la sumatoria del total de lo vendido por ese
+empleado a lo largo del último año. Se deberá retornar el código del vendedor
+que más vendió (en monto) a lo largo del último año.*/
+CREATE PROCEDURE ej4 @vendedor NUMERIC(6)
+AS
+BEGIN
+	UPDATE Empleado SET empl_comision =
+	(SELECT SUM(fact_total) FROM factura
+	WHERE fact_vendedor = empl_codigos AND YEAR(fact_fecha) =
+	(SELECT TOP 1 YEAR(fact_fecha) FROM Factura ORDER BY YEAR(fact_fecha) DESC))
+	SELECT @vendedor = MAX(empl_comision) FROM Empleado
+	RETURN
+END

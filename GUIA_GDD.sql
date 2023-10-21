@@ -21,16 +21,19 @@ ORDER BY sum(item_cantidad);
 /*Realizar una consulta que muestre código de producto, nombre de producto y el stock
 total, sin importar en que deposito se encuentre, los datos deben ser ordenados por
 nombre del artículo de menor a mayor*/
-SELECT prod_codigo, prod_nombre, SUM(ISNULL(stoc_cantidad, 0)) FROM roducto LEFT JOIN STOCK ON prod_codigo = stoc_producto
+SELECT prod_codigo, prod_detalle, SUM(ISNULL(stoc_cantidad, 0))
+FROM Producto
+LEFT JOIN STOCK ON prod_codigo = stoc_producto
 GROUP BY prod_codigo, prod_detalle
-ORDER BY prod_deralle;
+ORDER BY prod_detalle;
 
 /*EJERCICIO 4*/
 /*Realizar una consulta que muestre para todos los artículos código, detalle y cantidad de
 artículos que lo componen. Mostrar solo aquellos artículos para los cuales el stock
 promedio por depósito sea mayor a 100.*/
 SELECT prod_codigo, prod_detalle, count(comp_componente)
-FROM Producto LEFT JOIN Composicion ON  prod_codigo = comp_producto
+FROM Producto
+LEFT JOIN Composicion ON  prod_codigo = comp_producto
 WHERE prod_codigo IN (SELECT prod_codigo FROM STOCK GROUP BY stoc_producto HAVING AVG(stoc_cantidad) > 100)
 GROUP BY prod_codigo, prod_detalle
 ORDER BY COUNT(comp_componente) DESC
@@ -39,7 +42,8 @@ ORDER BY COUNT(comp_componente) DESC
 /*Realizar una consulta que muestre código de artículo, detalle y cantidad de egresos de
 stock que se realizaron para ese artículo en el año 2012 (egresan los productos que
 fueron vendidos). Mostrar solo aquellos que hayan tenido más egresos que en el 2011*/
-SELECT prod_codigo, prod_detalle, SUM(item_cantidad) Egresos FROM Producto
+SELECT prod_codigo, prod_detalle, SUM(item_cantidad) Egresos
+FROM Producto
 	JOIN item_factura ON prod_codigo = item_producto
 	JOIN Factura ON fact_tipo + fact_sucursal + fact_numero = item_tipo + item_sucursal + item_numero
 WHERE YEAR(fact_fecha) = 2012
@@ -78,6 +82,16 @@ SELECT empl_jefe, empl_codigo, rtrim(empl_nombre) + ' ' + rtrim(empl_apellido) N
 FROM Empleado JOIN DEPOSITO ON depo_encargado = empl_codigo OR depo_encargado = empl_jefe
 	LEFT JOIN deposito d2 ON d2.depo_encargado = empl_jefe
 GROUP BY empl_jefe, empl_codigo, rtrim(empl_nombre) + ' ' + rtrim(empl_apellido)
+
+SELECT J.empl_codigo AS [Código jefe],
+	rtrim(J.empl_nombre) + ' ' + rtrim(J.empl_apellido) AS [Nombre jefe],
+	E.empl_codigo AS [Código empleado],
+	rtrim(E.empl_nombre) + ' ' + rtrim(E.empl_apellido) AS [Nombre empleado],
+	COUNT(depo_encargado) AS [Depósitos asignados]
+FROM Empleado J
+JOIN DEPOSITO ON depo_encargado = empl_codigo 
+JOIN Empleado E ON E.empl_jefe = J.empl_codigo
+GROUP BY E.empl_codigo, J.empl_codigo, E.empl_nombre, E.empl_apellido, J.empl_nombre, J.empl_apellido
 
 /*EJERCICIO 10*/
 /*Mostrar los 10 productos más vendidos en la historia y también los 10 productos menos

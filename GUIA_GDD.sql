@@ -175,3 +175,25 @@ JOIN Producto C ON C.prod_precio = comp_componente
 GROUP BY P.prod_detalle, P.prod_precio
 HAVING COUNT(*) >=2
 ORDER BY COUNT(*) DESC
+
+/*EJERCICIO 14*/
+/*Escriba una consulta que retorne una estadística de ventas por cliente. Los campos que
+debe retornar son:
+Código del cliente
+Cantidad de veces que compro en el último año
+Promedio por compra en el último año
+Cantidad de productos diferentes que compro en el último año
+Monto de la mayor compra que realizo en el último año
+Se deberán retornar todos los clientes ordenados por la cantidad de veces que compro en
+el último año.
+No se deberán visualizar NULLs en ninguna columna*/
+SELECT C.clie_codigo AS [Código del cliente],
+COUNT(DISTINCT fact_numero) AS [Cantidad de veces que compro en el último año],
+AVG(fact_total) AS [Promedio por compra en el último año],
+COUNT(DISTINCT item_producto) AS [Cantidad de productos diferentes que compro en el último año],
+(SELECT TOP 1 fact_total FROM Factura WHERE fact_cliente = C.clie_codigo GROUP BY fact_total ORDER BY fact_total) AS [Monto de la mayor compra que realizo en el último año]
+FROM Cliente C
+LEFT JOIN Factura ON fact_cliente = C.clie_codigo
+JOIN Item_Factura ON fact_tipo + fact_sucursal + fact_numero = item_tipo + item_sucursal + item_numero
+WHERE YEAR(fact_fecha) = (SELECT TOP 1 YEAR(fact_fecha) FROM Factura GROUP BY fact_fecha ORDER BY fact_fecha DESC)
+GROUP BY C.clie_codigo

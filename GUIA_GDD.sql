@@ -215,3 +215,27 @@ LEFT JOIN Producto P1 ON P1.prod_codigo = C1.comp_componente
 LEFT JOIN Producto P2 ON P2.prod_codigo = C2.comp_componente
 WHERE P1.prod_detalle != P2.prod_detalle
 GROUP BY P1.prod_codigo, P1.prod_detalle, P2.prod_codigo, P2.prod_detalle
+
+/*EJERCICIO 16*/
+/*Con el fin de lanzar una nueva campaña comercial para los clientes que menos compran
+en la empresa, se pide una consulta SQL que retorne aquellos clientes cuyas compras
+son inferiores a 1/3 del monto de ventas del producto que más se vendió en el 2012.
+Además mostrar
+1. Nombre del Cliente
+2. Cantidad de unidades totales vendidas en el 2012 para ese cliente.
+3. Código de producto que mayor venta tuvo en el 2012 (en caso de existir más de 1,
+mostrar solamente el de menor código) para ese cliente.*/
+SELECT DISTINCT clie_razon_social AS [Nombre del Cliente],
+SUM(item_cantidad),
+(SELECT TOP 1 prod_codigo
+FROM Producto
+JOIN Item_Factura ON item_producto = prod_codigo
+JOIN Factura ON item_tipo + item_sucursal + item_numero = fact_tipo + fact_sucursal + fact_numero
+WHERE fact_cliente = clie_codigo
+GROUP BY prod_codigo, item_producto
+ORDER BY COUNT(item_producto) DESC, item_producto ASC) AS [Código de producto que mayor venta tuvo en el 2012]
+FROM Cliente
+JOIN Factura ON fact_cliente = clie_codigo
+JOIN Item_Factura ON item_tipo + item_sucursal + item_numero = fact_tipo + fact_sucursal + fact_numero
+WHERE YEAR(fact_fecha) = 2012
+GROUP BY clie_codigo, clie_razon_social

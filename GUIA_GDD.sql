@@ -122,7 +122,7 @@ ordenar de mayor a menor, por la familia que más productos diferentes vendidos t
 solo se deberán mostrar las familias que tengan una venta superior a 20000 pesos para
 el año 2012.*/
 SELECT fami_detalle, COUNT(DISTINCT item_producto), SUM(item_precio * item_cantidad)
-FROM Familia JOIN Producto ON fami_id P prod_familia
+FROM Familia JOIN Producto ON fami_id = prod_familia
 	JOIN Item_factura ON prod_codigo = item_producto
 WHERE fami_id IN
 	(SELECT prod_familia
@@ -133,3 +133,45 @@ WHERE fami_id IN
 	HAVING SUM(item_cantidad * item_precio) > 20000)
 GROUP BY fami_id, fami_detalle
 ORDER BY 2 DESC
+
+
+/*EJERCICIO 12*/
+/*Mostrar nombre de producto, cantidad de clientes distintos que lo compraron importe
+promedio pagado por el producto, cantidad de depósitos en los cuales hay stock del
+producto y stock actual del producto en todos los depósitos. Se deberán mostrar
+aquellos productos que hayan tenido operaciones en el año 2012 y los datos deberán
+ordenarse de mayor a menor por monto vendido del producto*/
+SELECT prod_detalle, COUNT(DISTINCT fact_cliente)
+FROM Producto
+JOIN Item_factura ON prod_codigo = item_producto
+JOIN Factura ON fact_tipo + fact_sucursal + fact_numero = item_tipo + item_sucursal + item_numero
+JOIN STOCK ON prod_codigo = stoc_producto
+WHERE stoc_cantidad > 0 AND prod_codigo IN (SELECT item_producto FROM Item_factura
+											JOIN Factura ON fact_tipo + fact_sucursal + fact_numero = item_tipo + item_sucursal + item_numero
+											WHERE year(Fact_fecha) = 2012)
+
+GROUP BY prod_detalle, prod_precio
+ORDER BY prod_precio DESC
+
+SELECT prod_detalle, COUNT(DISTINCT fact_cliente), AVG(item_precio), COUNT(DISTINCT stoc_deposito)
+FROM Producto
+JOIN Item_factura ON prod_codigo = item_producto
+JOIN Factura ON fact_tipo + fact_sucursal + fact_numero = item_tipo + item_sucursal + item_numero
+JOIN STOCK ON prod_codigo = stoc_producto
+WHERE stoc_cantidad > 0 AND year(Fact_fecha) = 2012
+GROUP BY prod_detalle, prod_precio
+ORDER BY prod_precio DESC
+
+/*EJERCICIO 13*/
+/*Realizar una consulta que retorne para cada producto que posea composición nombre
+del producto, precio del producto, precio de la sumatoria de los precios por la cantidad
+de los productos que lo componen. Solo se deberán mostrar los productos que estén
+compuestos por más de 2 productos y deben ser ordenados de mayor a menor por
+cantidad de productos que lo componen.*/
+SELECT P.prod_detalle, P.prod_precio, SUM(C.prod_precio * comp_cantidad)
+FROM Composicion
+JOIN Producto P ON P.prod_codigo = comp_producto
+JOIN Producto C ON C.prod_precio = comp_componente
+GROUP BY P.prod_detalle, P.prod_precio
+HAVING COUNT(*) >=2
+ORDER BY COUNT(*) DESC

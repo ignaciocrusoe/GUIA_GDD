@@ -197,3 +197,21 @@ LEFT JOIN Factura ON fact_cliente = C.clie_codigo
 JOIN Item_Factura ON fact_tipo + fact_sucursal + fact_numero = item_tipo + item_sucursal + item_numero
 WHERE YEAR(fact_fecha) = (SELECT TOP 1 YEAR(fact_fecha) FROM Factura GROUP BY fact_fecha ORDER BY fact_fecha DESC)
 GROUP BY C.clie_codigo
+
+/*EJERCICIO 15*/
+/*Escriba una consulta que retorne los pares de productos que hayan sido vendidos juntos
+(en la misma factura) más de 500 veces. El resultado debe mostrar el código y
+descripción de cada uno de los productos y la cantidad de veces que fueron vendidos
+juntos. El resultado debe estar ordenado por la cantidad de veces que se vendieron
+juntos dichos productos. Los distintos pares no deben retornarse más de una vez.
+Ejemplo de lo que retornaría la consulta:
+PROD1 DETALLE1 PROD2 DETALLE2 VECES
+1731 MARLBORO KS 1 7 1 8 P H ILIPS MORRIS KS 5 0 7
+1718 PHILIPS MORRIS KS 1 7 0 5 P H I L I P S MORRIS BOX 10 5 6 2*/
+SELECT P1.prod_codigo, P1.prod_detalle, P2.prod_codigo, P2.prod_detalle, COUNT(*)
+FROM Composicion C1
+JOIN Composicion C2 ON C2.comp_producto = C1.comp_producto
+LEFT JOIN Producto P1 ON P1.prod_codigo = C1.comp_componente
+LEFT JOIN Producto P2 ON P2.prod_codigo = C2.comp_componente
+WHERE P1.prod_detalle != P2.prod_detalle
+GROUP BY P1.prod_codigo, P1.prod_detalle, P2.prod_codigo, P2.prod_detalle

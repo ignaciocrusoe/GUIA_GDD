@@ -124,3 +124,32 @@ CREATE OR ALTER PROCEDURE migrar_fact_table
 			LEFT JOIN Rubro ON rubr_id = prod_rubro
 			LEFT JOIN Familia ON fami_id = prod_familia
 		END
+
+/*EJERCICIO 6*/
+/*Realizar un procedimiento que si en alguna factura se facturaron componentes
+que conforman un combo determinado (o sea que juntos componen otro
+producto de mayor nivel), en cuyo caso deberá reemplazar las filas
+correspondientes a dichos productos por una sola fila con el producto que
+componen con la cantidad de dicho producto que corresponda.*/
+CREATE OR ALTER PROCEDURE combinar_productos
+	AS
+		BEGIN
+			DECLARE @consulta TABLE(item_tipo CHAR(1), item_sucursal CHAR(4), item_producto CHAR(8), item_cantidad DECIMAL(12,2))
+
+			INSERT INTO Item_Factura (item_tipo, item_sucursal, item_producto, item_cantidad)
+			SELECT DISTINCT I1.item_tipo, I1.item_sucursal, PC.prod_codigo, COUNT(PC.prod_codigo) AS[item_cantidad] FROM Factura
+			JOIN Item_Factura I1 ON I1.item_tipo + I1.item_sucursal + I1.item_numero = fact_tipo + fact_sucursal + fact_numero
+			JOIN Item_Factura I2 ON I2.item_tipo + I2.item_sucursal + I2.item_numero = fact_tipo + fact_sucursal + fact_numero
+			JOIN Producto P1 ON P1.prod_codigo = I1.item_producto
+			JOIN Producto P2 ON P2.prod_codigo = I2.item_producto
+			JOIN Composicion C1 ON C1.comp_componente = I1.item_producto
+			JOIN Composicion C2 ON C2.comp_componente = I2.item_producto
+			JOIN Producto PC ON PC.prod_codigo = C1.comp_producto
+			WHERE C1.comp_componente != C2.comp_componente
+			AND C1.comp_producto = C2.comp_producto
+			GROUP BY I1.item_tipo, I1.item_sucursal, PC.prod_codigo
+
+			DELETE FROM Item_Factura
+			WHERE item_tipo + item_sucursal + item_numero IN (SELECT item_tipo + item_sucursal + item_numero FROM @consulta)
+
+		END

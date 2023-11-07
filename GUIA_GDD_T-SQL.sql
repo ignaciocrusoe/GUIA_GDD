@@ -50,7 +50,7 @@ mayor salario. Si hay más de uno se seleccionara el de mayor antigüedad en la
 empresa. Al finalizar la ejecución del objeto la tabla deberá cumplir con la regla
 de un único empleado sin jefe (el gerente general) y deberá retornar la cantidad
 de empleados que había sin jefe antes de la ejecución.*/
-CREATE OR ALTER PROCEDURE corregir_tabla_empleado
+CREATE OR ALTER PROCEDURE corregir_tabla_empleado @output NUMERIC(6)
 	AS
 	BEGIN
 		DECLARE @cant_gerentes INT
@@ -68,8 +68,15 @@ CREATE OR ALTER PROCEDURE corregir_tabla_empleado
 					SET empl_jefe = @gerente_codigo
 					WHERE empl_jefe IS NULL
 				END
-		RETURN (@cant_gerentes - 1)	
+				SET @output = @cant_gerentes - 1
+		RETURN
 	END
+
+BEGIN
+DECLARE @output NUMERIC(6)
+EXECUTE corregir_tabla_empleado @output = 0
+PRINT @output
+END
 
 /*EJERCICIO 4*/
 /*Cree el/los objetos de base de datos necesarios para actualizar la columna de
@@ -81,8 +88,10 @@ AS
 BEGIN
 	UPDATE Empleado SET empl_comision =
 	(SELECT SUM(fact_total) FROM factura
-	WHERE fact_vendedor = empl_codigos AND YEAR(fact_fecha) =
+	WHERE fact_vendedor = empl_codigo AND YEAR(fact_fecha) =
 	(SELECT TOP 1 YEAR(fact_fecha) FROM Factura ORDER BY YEAR(fact_fecha) DESC))
 	SELECT @vendedor = MAX(empl_comision) FROM Empleado
 	RETURN
 END
+
+EXEC dbo.ej4 @vendedor = 01

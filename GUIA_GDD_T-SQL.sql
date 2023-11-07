@@ -41,6 +41,36 @@ END
 
 SELECT prod_codigo, dbo.ej2(prod_codigo, '2010-01-23 00:00:00') FROM Producto
 
+/*EJERCICIO 3*/
+/*Cree el/los objetos de base de datos necesarios para corregir la tabla empleado
+en caso que sea necesario. Se sabe que debería existir un único gerente general
+(debería ser el único empleado sin jefe). Si detecta que hay más de un empleado
+sin jefe deberá elegir entre ellos el gerente general, el cual será seleccionado por
+mayor salario. Si hay más de uno se seleccionara el de mayor antigüedad en la
+empresa. Al finalizar la ejecución del objeto la tabla deberá cumplir con la regla
+de un único empleado sin jefe (el gerente general) y deberá retornar la cantidad
+de empleados que había sin jefe antes de la ejecución.*/
+CREATE OR ALTER PROCEDURE corregir_tabla_empleado
+	AS
+	BEGIN
+		DECLARE @cant_gerentes INT
+		DECLARE @gerente_codigo NUMERIC(6)
+		SET @cant_gerentes = (SELECT COUNT(DISTINCT empl_codigo) FROM Empleado
+		WHERE empl_jefe IS NULL)
+
+		IF (@cant_gerentes > 1)
+				BEGIN
+					SELECT TOP 1 @gerente_codigo = empl_codigo FROM Empleado
+					GROUP BY empl_codigo, empl_salario
+					ORDER BY empl_salario DESC
+
+					UPDATE Empleado
+					SET empl_jefe = @gerente_codigo
+					WHERE empl_jefe IS NULL
+				END
+		RETURN (@cant_gerentes - 1)	
+	END
+
 /*EJERCICIO 4*/
 /*Cree el/los objetos de base de datos necesarios para actualizar la columna de
 empleado empl_comision con la sumatoria del total de lo vendido por ese

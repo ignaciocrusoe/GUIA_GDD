@@ -21,8 +21,6 @@ END
 
 SELECT stoc_producto, stoc_deposito, dbo.ej1(stoc_producto, stoc_deposito) FROM stock
 
-<<<<<<< HEAD
-=======
 /*EJERCICIO 2*/
 /*Realizar una función que dado un artículo y una fecha, retorne el stock que
 existía a esa fecha*/
@@ -43,7 +41,6 @@ END
 
 SELECT prod_codigo, dbo.ej2(prod_codigo, '2010-01-23 00:00:00') FROM Producto
 
->>>>>>> e9118b5 (Update)
 /*EJERCICIO 4*/
 /*Cree el/los objetos de base de datos necesarios para actualizar la columna de
 empleado empl_comision con la sumatoria del total de lo vendido por ese

@@ -95,3 +95,32 @@ BEGIN
 END
 
 EXEC dbo.ej4 @vendedor = 01
+
+/*EJERCICIO 5*/
+/*Realizar un procedimiento que complete con los datos existentes en el modelo
+provisto la tabla de hechos denominada Fact_table tiene las siguiente definición:
+Create table Fact_table
+( anio char(4),
+mes char(2),
+familia char(3),
+rubro char(4),
+zona char(3),
+cliente char(6),
+producto char(8),
+cantidad decimal(12,2),
+monto decimal(12,2)
+)
+Alter table Fact_table
+Add constraint primary key(anio,mes,familia,rubro,zona,cliente,producto)*/
+
+CREATE OR ALTER PROCEDURE migrar_fact_table	
+	AS
+		BEGIN
+			INSERT INTO Fact_table (anio, mes, familia, rubro, zona, cliente, producto, cantidad, monto)
+			SELECT (YEAR(fact_fecha), MONTH(fact_fecha), fami_id, rubr_id, clie_codigo, prod_codigo, item_cantidad, item_cantidad * item_precio)
+			FROM Item_Factura LEFT JOIN Factura ON fact_tipo + fact_sucursal + fact_numero = item_tipo + item_sucursal + item_numero
+			LEFT JOIN Cliente ON clie_codigo = fact_cliente
+			LEFT JOIN Producto ON prod_codigo = item_producto
+			LEFT JOIN Rubro ON rubr_id = prod_rubro
+			LEFT JOIN Familia ON fami_id = prod_familia
+		END

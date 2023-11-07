@@ -153,3 +153,25 @@ CREATE OR ALTER PROCEDURE combinar_productos
 			WHERE item_tipo + item_sucursal + item_numero IN (SELECT item_tipo + item_sucursal + item_numero FROM @consulta)
 
 		END
+
+/*EJERCICIO 7*/
+/*Hacer un procedimiento que dadas dos fechas complete la tabla Ventas. Debe
+insertar una línea por cada artículo con los movimientos de stock generados por
+las ventas entre esas fechas. La tabla se encuentra creada y vacía.*/
+IF OBJECT_ID('Ventas','U') IS NOT NULL
+	DROP TABLE Ventas
+GO
+
+CREATE TABLE Ventas(
+	vent_codigo CHAR(8),
+	vent_detalle CHAR(50),
+	vent_movimientos INT,
+	vent_precio_prom DECIMAL(12,1),
+	vent_renglon INT IDENTITY PRIMARY KEY,
+	vent_ganancia CHAR(6) NOT NULL
+)
+
+CREATE OR ALTER PROCEDURE completar_tabla_ventas (@fecha_inicio SMALLDATETIME, @fecha_fin SMALLDATETIME)
+	AS
+		BEGIN
+		END

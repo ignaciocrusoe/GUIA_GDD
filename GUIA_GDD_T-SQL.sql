@@ -163,7 +163,7 @@ IF OBJECT_ID('Ventas','U') IS NOT NULL
 GO
 
 CREATE TABLE Ventas(
-	vent_codigo CHAR(8),
+	vent_producto CHAR(8),
 	vent_detalle CHAR(50),
 	vent_movimientos INT,
 	vent_precio_prom DECIMAL(12,1),
@@ -174,4 +174,27 @@ CREATE TABLE Ventas(
 CREATE OR ALTER PROCEDURE completar_tabla_ventas (@fecha_inicio SMALLDATETIME, @fecha_fin SMALLDATETIME)
 	AS
 		BEGIN
+		DECLARE @producto CHAR(8)
+		DECLARE @detalle CHAR(50)
+		DECLARE @movimientos INT
+		DECLARE @precio DECIMAL(12,2)
+		DECLARE @ganancia DECIMAL(12,2)
+
+		DECLARE c_ventas FOR
+			SELECT prod_codigo, prod_detalle, COUNT(item_producto), AVG(item_precio), SUM(item_cantidad * item_precio) - SUM(item_cantidad * prod_precio)
+			FROM Producto JOIN Item_Factura ON prod_codigo = item_producto
+			JOIN Factura ON item_tipo + item_sucursal + item_numero = fact_tipo + fact_sucursal + fact_numero
+			WHERE fact_fecha BETWEEN @fecha_inicio AND @fecha_fin
+			GROUP BY prod_codigo, prod_detalle
+
+		OPEN c_ventas
+		FETCH NEXT FROM c_ventas INTO @producto, @detalle, @movimientos, @precio, @precio, @ganancia
+
+		WHILE @@FETCH_STATUS = 0
+			BEGIN
+				INSERT INTO Ventas (ven_producto, vent_detalle, vent_movimientos, ven_precio)
+				VALUES (@producto, @detalle, @movimientos, @precio, @precio, @ganancia)
+
+				FETCH NEXT FROM c_ventas INTO @producto, @detalle, @movimientos, @precio, @precio, @ganancia
+			END
 		END

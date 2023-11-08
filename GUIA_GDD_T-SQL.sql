@@ -180,7 +180,7 @@ CREATE OR ALTER PROCEDURE completar_tabla_ventas (@fecha_inicio SMALLDATETIME, @
 		DECLARE @precio DECIMAL(12,2)
 		DECLARE @ganancia DECIMAL(12,2)
 
-		DECLARE c_ventas FOR
+		DECLARE c_ventas CURSOR FOR
 			SELECT prod_codigo, prod_detalle, COUNT(item_producto), AVG(item_precio), SUM(item_cantidad * item_precio) - SUM(item_cantidad * prod_precio)
 			FROM Producto JOIN Item_Factura ON prod_codigo = item_producto
 			JOIN Factura ON item_tipo + item_sucursal + item_numero = fact_tipo + fact_sucursal + fact_numero
@@ -192,9 +192,67 @@ CREATE OR ALTER PROCEDURE completar_tabla_ventas (@fecha_inicio SMALLDATETIME, @
 
 		WHILE @@FETCH_STATUS = 0
 			BEGIN
-				INSERT INTO Ventas (ven_producto, vent_detalle, vent_movimientos, ven_precio)
-				VALUES (@producto, @detalle, @movimientos, @precio, @precio, @ganancia)
+				INSERT INTO Ventas (vent_producto, vent_detalle, vent_movimientos, vent_precio_prom, vent_ganancia)
+				VALUES (@producto, @detalle, @movimientos, @precio, @ganancia)
 
 				FETCH NEXT FROM c_ventas INTO @producto, @detalle, @movimientos, @precio, @precio, @ganancia
 			END
+			CLOSE c_ventas
+			DEALLOCATE c_ventas
+		END
+
+		EXEC dbo.completar_tabla_ventas '2012-01-01', '2012-06-01'
+		SELECT * FROM Ventas
+
+/*EJERCICIO 8*/
+/*Realizar un procedimiento que complete la tabla Diferencias de precios, para los
+productos facturados que tengan composición y en los cuales el precio de
+facturación sea diferente al precio del cálculo de los precios unitarios por
+cantidad de sus componentes, se aclara que un producto que compone a otro,
+también puede estar compuesto por otros y así sucesivamente, la tabla se debe
+crear y está formada por las siguientes columnas*/
+IF OBJECT_ID('Diferencias','U') IS NOT NULL
+	DROP TABLE Diferencias
+GO
+
+CREATE TABLE Diferencias ( 
+	dif_codigo char(8),
+	dif_detalle char(50),
+	dif_cantidad NUMERIC(6,0),
+	dif_precio_generado DECIMAL(12,2),
+	dif_precio_facturado DECIMAL(12,2),
+)
+GO
+
+CREATE OR ALTER PROCEDURE completar_tabla_diferencias
+	AS
+		BEGIN
+		DECLARE @codigo CHAR(8)
+		DECLARE @detalle CHAR(50)
+		DECLARE @cantidad INT
+		DECLARE @precio_generado DECIMAL(12,2)
+		DECLARE @rpecio_facturado DECIMAL(12,2)
+
+		DECLARE c_diferencias CURSOR FOR
+			SELECT  prod_codigo, prod_detalle, COUNT(item_producto), @precio_generado, fact_total 
+			FROM Item_Factura
+			LEFT JOIN Factura ON fact_tipo + fact_sucursal + fact_numero = item_tipo + item_sucursal + item_numero
+			LEFT JOIN Producto ON prod_codigo = item_cantidad
+			WHERE prod_codigo IN (SELECT DISTINCT comp_producto FROM Composicion)
+			AND fact_total != (SELECT @precio_generado = SUM(item_cantidad * item_precio) FROM Factura
+								LEFT JOIN Item_Factura ON fact_tipo + fact_sucursal + fact_numero = item_tipo + item_sucursal + item_numero
+								WHERE prod_codigo = @prod_codigo)
+
+
+		OPEN c_diferencias
+		FETCH NEXT FROM c_diferencias INTO @producto, @detalle, @cantidad, @precio_generado, @rpecio_facturado
+
+		WHILE @@FETCH_STATUS = 0
+			
+				INSERT INTO Diferencias(dif_codigo, dif_detalle, dif_cantidad, dif_precio_generado, dif_precio_facturado)
+				VALUES (@codigo, @detalle, @cantidad, @precio_generado, @rpecio_facturado)
+
+				FETCH NEXT FROM c_diferencias INTO @producto, @detalle, @cantidad, @precio_generado, @rpecio_facturado
+			END
+
 		END

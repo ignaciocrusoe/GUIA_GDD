@@ -256,3 +256,23 @@ CREATE OR ALTER PROCEDURE completar_tabla_diferencias
 			END
 
 		END
+
+/*EJERCICIO 9*/
+/*Crear el/los objetos de base de datos que ante alguna modificación de un ítem de
+factura de un artículo con composición realice el movimiento de sus
+correspondientes componentes.*/
+CREATE OR ALTER TRIGGER ON Item_Factura FOR UPDATE
+	AS
+	BEGIN
+		UPDATE STOCK SET stoc_cantidad = stoc_cantidad - (SELECT comp_cantidad * (I.item_cantidad - D.item_cantidad)
+														  FROM inserted I JOIN deleted D ON I.item_tipo + I.item_sucursal + I.item_numero + I.item_producto = 
+														  D.item_tipo + D.item_sucursal + D.item_numero + D.item_producto
+														  JOIN Composicion ON comp_producto = I.item_producto
+														  WHERE comp_componente = stoc_producto AND stoc_deposito = (SELECT TOP 1 stoc_deposito
+																													 FROM STOCK WHERE stoc_producto = comp_componente 
+																													 ORDER BY stoc_cantidad DESC)
+														  )
+														  
+
+	END
+GO

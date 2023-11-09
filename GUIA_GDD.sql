@@ -239,3 +239,34 @@ JOIN Factura ON fact_cliente = clie_codigo
 JOIN Item_Factura ON item_tipo + item_sucursal + item_numero = fact_tipo + fact_sucursal + fact_numero
 WHERE YEAR(fact_fecha) = 2012
 GROUP BY clie_codigo, clie_razon_social
+
+/*EJERCICIO 17*/
+/*Escriba una consulta que retorne una estadística de ventas por año y mes para cada
+producto.
+La consulta debe retornar:
+PERIODO: Año y mes de la estadística con el formato YYYYMM
+PROD: Código de producto
+DETALLE: Detalle del producto
+CANTIDAD_VENDIDA= Cantidad vendida del producto en el periodo
+VENTAS_AÑO_ANT= Cantidad vendida del producto en el mismo mes del periodo
+pero del año anterior
+CANT_FACTURAS= Cantidad de facturas en las que se vendió el producto en el
+periodo
+La consulta no puede mostrar NULL en ninguna de sus columnas y debe estar ordenada
+por periodo y código de producto.*/
+SELECT CONCAT(YEAR(fact_fecha), RIGHT('0' + RTRIM(MONTH(fact_fecha)),2)) AS [PERIODO],
+	   prod_codigo AS [PROD],
+	   prod_detalle AS [DETALLE],
+	   SUM(ISNULL(item_cantidad, 0)) AS [CANTIDAD_VENDIDA],
+	   ISNULL((SELECT SUM(I.item_cantidad) FROM Item_Factura I
+	    JOIN Factura F2 ON F2.fact_tipo + F2.fact_sucursal + F2.fact_numero = I.item_tipo + I.item_sucursal + I.item_numero
+		WHERE I.item_producto = prod_codigo
+		AND YEAR(F2.fact_fecha) = YEAR(F1.fact_fecha) - 1
+		AND MONTH(F2.fact_fecha) = MONTH(F1.fact_fecha)
+		),0) AS [CANT_FACTURAS_AÑO_ANTERIOR],
+		ISNULL(COUNT(*),0) AS [CANT_FACTURAS]
+FROM Item_Factura
+LEFT JOIN Factura F1 ON F1.fact_tipo + F1.fact_sucursal + F1.fact_numero = item_tipo + item_sucursal + item_numero
+LEFT JOIN Producto ON prod_codigo = item_producto
+GROUP BY fact_fecha, prod_codigo, prod_detalle, YEAR(fact_fecha), MONTH(fact_fecha)
+ORDER BY fact_fecha, prod_codigo

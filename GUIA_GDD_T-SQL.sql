@@ -276,3 +276,37 @@ CREATE OR ALTER TRIGGER ON Item_Factura FOR UPDATE
 
 	END
 GO
+
+/*EJERCICIO 10*/
+/*Crear el/los objetos de base de datos que ante el intento de borrar un artículo
+verifique que no exista stock y si es así lo borre en caso contrario que emita un
+mensaje de error.*/
+CREATE OR ALTER TRIGGER tr_eliminar_producto ON Producto INSTEAD OF DELETE
+	AS
+		BEGIN
+			DECLARE @producto CHAR(8)
+			DECLARE C_PRODUCTO CURSOR FOR 
+				SELECT prod_codigo FROM deleted
+
+			OPEN C_PRODUCTO
+			FETCH NEXT FROM C_PRODUCTO INTO @producto
+
+			WHILE @@FETCH_STATUS = 0
+				BEGIN
+					DECLARE @stock DECIMAL(12,2)
+					SELECT @stock = SUM(stoc_cantidad) FROM STOCK
+					WHERE stoc_producto = @producto
+					GROUP BY stoc_producto
+
+					IF @stock <= 0
+						DELETE FROM Producto WHERE prod_codigo = @producto
+					ELSE
+						RAISERROR('No se pudo borrar el producto %s', 16, 1, @producto)
+
+						FETCH NEXT FROM C_PRODUCTO INTO @producto
+				END
+
+			SELECT prod_codigo FROM Producto
+		END
+
+DELETE FROM Producto WHERE prod_codigo IN (SELECT TOP 1 prod_codigo FROM Producto)

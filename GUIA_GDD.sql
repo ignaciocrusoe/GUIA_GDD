@@ -270,3 +270,6 @@ LEFT JOIN Factura F1 ON F1.fact_tipo + F1.fact_sucursal + F1.fact_numero = item_
 LEFT JOIN Producto ON prod_codigo = item_producto
 GROUP BY fact_fecha, prod_codigo, prod_detalle, YEAR(fact_fecha), MONTH(fact_fecha)
 ORDER BY fact_fecha, prod_codigo
+
+GROUP BY fact_cliente
+	ORDER BY SUM(item_cantidad) DESC), '--------') AS 'Cliente'

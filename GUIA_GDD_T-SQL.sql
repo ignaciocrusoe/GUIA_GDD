@@ -310,3 +310,69 @@ CREATE OR ALTER TRIGGER tr_eliminar_producto ON Producto INSTEAD OF DELETE
 		END
 
 DELETE FROM Producto WHERE prod_codigo IN (SELECT TOP 1 prod_codigo FROM Producto)
+
+/*EJERCICIO 11*/
+/*Cree el/los objetos de base de datos necesarios para que dado un código de
+empleado se retorne la cantidad de empleados que este tiene a su cargo (directa o
+indirectamente). Solo contar aquellos empleados (directos o indirectos) que
+tengan un código mayor que su jefe directo.*/
+CREATE OR ALTER FUNCTION cantidad_de_empleados (@jefe NUMERIC(6))
+RETURNS INT
+AS
+	BEGIN
+		DECLARE @empleado INT
+		DECLARE @cant_empleados INT
+		SELECT @cant_empleados = COUNT(*) FROM Empleado WHERE empl_jefe = @jefe
+		DECLARE c_empleado CURSOR FOR SELECT empl_codigo FROM Empleado WHERE empl_jefe = @jefe
+		OPEN c_empleado
+		FETCH NEXT FROM c_empleado INTO @empleado
+
+		WHILE @@FETCH_STATUS = 0
+			BEGIN
+				SET @cant_empleados = @cant_empleados + dbo.cantidad_de_empleados(@empleado)
+				FETCH NEXT FROM c_empleado INTO @empleado
+			END
+
+		CLOSE c_empleadO
+		DEALLOCATE c_empleado
+		RETURN @cant_empleados
+	END
+
+/*EJERCICIO 12*/
+/*Cree el/los objetos de base de datos necesarios para que nunca un producto
+pueda ser compuesto por sí mismo. Se sabe que en la actualidad dicha regla se
+cumple y que la base de datos es accedida por n aplicaciones de diferentes tipos
+y tecnologías. No se conoce la cantidad de niveles de composición existentes.*/
+CREATE OR ALTER FUNCTION f_esta_compuesto_por_si_mismo (@producto, @componente)
+AS
+	BEGIN
+		DECLARE @producto2
+
+		IF @producto = @componente
+			RETURN 1
+
+		DECLARE c_composicion CURSOR FOR SELECT comp_componente FROM Composicion WHERE comp_producto = @componente
+		OPEN c_composicion
+		FETCH NEXT FROM c_composicion INTO @producto2
+
+		BEGIN TRANSACTION
+		WHILE @@FETCH_STATUS = 0
+			BEGIN
+				IF dbo.f_esta_compuesto_por_si_mismo(@producto, @producto2)
+					RETURN 1
+
+				FETCH NEXT FROM c_composicion INTO @producto2
+			END
+		CLOSE c_composicion
+		DEALLOCATE c_composicion
+		RETURN 0
+	END
+GO
+
+CREATE OR ALTER TRIGGER tr_composicion ON Composicion AFTER INSERT, UPDATE
+AS
+	BEGIN
+		IF (SELECT COUNT(*) FROM inserted WHERE dbo.f_esta_compuesto_por_si_mismo(comp_producto, comp_componente) = 1) > 0
+		ROLLBACK
+	END
+GO

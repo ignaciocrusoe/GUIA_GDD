@@ -376,3 +376,56 @@ AS
 		ROLLBACK
 	END
 GO
+
+/*EJERCICIO 13*/
+/*Cree el/los objetos de base de datos necesarios para implantar la siguiente regla
+“Ningún jefe puede tener un salario mayor al 20% de las suma de los salarios de
+sus empleados totales (directos + indirectos)”. Se sabe que en la actualidad dicha
+regla se cumple y que la base de datos es accedida por n aplicaciones de
+diferentes tipos y tecnologías*/
+CREATE OR ALTER TRIGGER tr_salario_jefe ON Empleado AFTER INSERT, UPDATE
+AS
+	BEGIN
+		DECLARE @empleado_tr NUMERIC(6)
+		DECLARE @sueldo_tr DECIMAL(12,2) = 0
+		DECLARE c_empleado_tr CURSOR FOR SELECT empl_codigo, empl_salario FROM inserted
+		OPEN c_empleado_tr
+		FETCH NEXT FROM c_empleado_tr INTO @empleado_tr, @sueldo_tr
+
+		BEGIN TRANSACTION
+		WHILE @@FETCH_STATUS = 0
+			BEGIN
+				IF @sueldo_tr >= 0.2 * dbo.f_sueldos_empleados(@empleado_tr)
+					ROLLBACK
+
+				FETCH NEXT FROM c_empleado INTO @empleado_tr, @sueldo_tr
+			END
+		COMMIT TRANSACTION
+	END
+GO
+
+CREATE OR ALTER FUNCTION f_sueldos_empleados (@jefe NUMERIC(6))
+RETURNS INT
+AS
+	BEGIN
+		DECLARE @suma_sueldos DECIMAL(12,2) = 0
+		DECLARE @sueldo DECIMAL(12,2) = 0
+		DECLARE @empleado NUMERIC(6)
+		DECLARE c_empleado CURSOR FOR SELECT empl_codigo, empl_salario FROM Empleado WHERE empl_jefe = @jefe
+		OPEN c_empleado
+		FETCH NEXT FROM c_empleado INTO @empleado, @sueldo
+
+		WHILE @@FETCH_STATUS = 0
+			BEGIN
+				SET @suma_sueldos = @suma_sueldos + @sueldo + dbo.f_sueldos_empleados(@empleado)
+				FETCH NEXT FROM c_empleado INTO @empleado, @sueldo
+			END
+
+		CLOSE c_empleado
+		DEALLOCATE c_empleado
+		RETURN @suma_sueldos
+	END
+GO
+
+SELECT empl_codigo, dbo.f_sueldos_empleados(empl_codigo) FROM Empleado
+

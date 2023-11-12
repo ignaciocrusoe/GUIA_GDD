@@ -429,3 +429,56 @@ GO
 
 SELECT empl_codigo, dbo.f_sueldos_empleados(empl_codigo) FROM Empleado
 
+/*EJERCICIO 14*/
+/*Agregar el/los objetos necesarios para que si un cliente compra un producto
+compuesto a un precio menor que la suma de los precios de sus componentes
+que imprima la fecha, que cliente, que productos y a qué precio se realizó la
+compra. No se deberá permitir que dicho precio sea menor a la mitad de la suma
+de los componentes.*/
+CREATE OR ALTER TRIGGER tr_compra_producto_compuesto ON Factura FOR INSERT
+AS
+	BEGIN
+		DECLARE @producto CHAR(8)
+		DECLARE @precio DECIMAL(12,2)
+		DECLARE c_factura CURSOR FOR SELECT item_producto, item_precio FROM inserted JOIN Item_Factura ON item_tipo + item_sucursal + item_numero = fact_tipo + fact_sucursal + fact_numero
+		FETCH NEXT FROM c_factura INTO @producto, @precio
+		BEGIN TRANSACTION
+		WHILE @@FETCH_STATUS = 0
+			BEGIN
+				IF @precio <= 0.5 * dbo.f_precio_componentes(@producto)
+					ROLLBACK
+
+				FETCH NEXT FROM c_factura INTO @producto, @precio
+			END
+		CLOSE c_factura
+		DEALLOCATE c_factura
+		COMMIT TRANSACTION
+	END
+GO
+
+CREATE OR ALTER FUNCTION f_precio_componentes(@producto CHAR(8))
+RETURNS DECIMAL(12,2)
+AS
+	BEGIN
+		DECLARE @producto_v CHAR(8)
+		DECLARE @precio DECIMAL(12,2)
+		DECLARE @suma_precio DECIMAL(12,2)
+		DECLARE c_producto CURSOR FOR SELECT prod_codigo, prod_precio FROM Producto JOIN Composicion ON comp_componente = prod_codigo WHERE comp_producto = @producto
+		OPEN c_producto
+		FETCH NEXT FROM c_producto INTO @producto_v, @precio
+		WHILE @@FETCH_STATUS = 0
+			BEGIN
+				IF (SELECT COUNT(*) FROM Composicion WHERE comp_producto = @producto_v) = 0
+					RETURN @precio
+				ELSE	
+					SET @suma_precio = @suma_precio + dbo.f_precio_componentes(@producto_v)	
+					FETCH NEXT FROM c_producto INTO @producto_v, @precio
+			END
+		CLOSE c_producto
+		DEALLOCATE c_producto
+		RETURN @suma_precio
+	END
+GO
+
+SELECT comp_producto, dbo.f_precio_componentes(comp_producto) FROM Composicion
+GO

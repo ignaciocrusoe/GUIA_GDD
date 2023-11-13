@@ -271,5 +271,49 @@ LEFT JOIN Producto ON prod_codigo = item_producto
 GROUP BY fact_fecha, prod_codigo, prod_detalle, YEAR(fact_fecha), MONTH(fact_fecha)
 ORDER BY fact_fecha, prod_codigo
 
-GROUP BY fact_cliente
-	ORDER BY SUM(item_cantidad) DESC), '--------') AS 'Cliente'
+/*EJERCICIO 18*/
+/*Escriba una consulta que retorne una estadística de ventas para todos los rubros.
+La consulta debe retornar:
+DETALLE_RUBRO: Detalle del rubro
+VENTAS: Suma de las ventas en pesos de productos vendidos de dicho rubro
+PROD1: Código del producto más vendido de dicho rubro
+PROD2: Código del segundo producto más vendido de dicho rubro
+CLIENTE: Código del cliente que compro más productos del rubro en los últimos 30
+días
+La consulta no puede mostrar NULL en ninguna de sus columnas y debe estar ordenada
+por cantidad de productos diferentes vendidos del rubro.*/
+SELECT 
+	ISNULL(rubr_detalle, 'Sin descripcion') AS [Rubro],
+	ISNULL(SUM(item_cantidad * item_precio), 0) AS [Ventas],
+	ISNULL((SELECT TOP 1 item_producto
+			FROM Producto
+			JOIN Item_Factura ON prod_codigo = item_producto
+			WHERE prod_rubro = rubr_id
+			GROUP BY item_producto
+			ORDER BY SUM(item_cantidad) DESC), 0) AS [PROD1],
+	ISNULL((SELECT TOP 1 item_producto FROM Producto
+			JOIN Item_Factura ON prod_codigo = item_producto
+			WHERE prod_rubro = rubr_id
+			AND item_producto NOT IN
+			(SELECT TOP 1 item_producto FROM Producto
+			JOIN Item_Factura ON prod_codigo = item_producto
+			WHERE prod_rubro = rubr_id
+			GROUP BY item_producto
+			ORDER BY SUM(item_cantidad) DESC) 
+			GROUP BY item_producto
+			ORDER BY SUM(item_cantidad) DESC), '-') AS [PROD2],
+	ISNULL((SELECT TOP 1 fact_cliente
+			FROM Producto
+			JOIN Item_Factura ON prod_codigo = item_producto
+			JOIN Factura ON item_numero + item_sucursal + item_tipo =
+			fact_numero + fact_sucursal + fact_tipo
+			WHERE fact_fecha >
+			(SELECT DATEADD(DAY, -30, MAX(fact_fecha)) FROM Factura)
+			AND prod_rubro = rubr_id
+			GROUP BY fact_cliente
+			ORDER BY SUM(item_cantidad) DESC), '-') AS [Cliente]
+FROM Rubro
+JOIN Producto ON rubr_id = prod_rubro
+JOIN Item_Factura ON prod_codigo = item_producto
+GROUP BY rubr_id, rubr_detalle
+ORDER BY COUNT(DISTINCT prod_codigo)

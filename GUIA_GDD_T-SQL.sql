@@ -482,3 +482,37 @@ GO
 
 SELECT comp_producto, dbo.f_precio_componentes(comp_producto) FROM Composicion
 GO
+
+/*EJERCICIO 15*/
+/*Cree el/los objetos de base de datos necesarios para que el objeto principal
+reciba un producto como parametro y retorne el precio del mismo.
+Se debe prever que el precio de los productos compuestos sera la sumatoria de
+los componentes del mismo multiplicado por sus respectivas cantidades. No se
+conocen los nivles de anidamiento posibles de los productos. Se asegura que
+nunca un producto esta compuesto por si mismo a ningun nivel. El objeto
+principal debe poder ser utilizado como filtro en el where de una sentencia
+select.*/
+CREATE OR ALTER FUNCTION f_precio_producto (@producto CHAR(8))
+RETURNS DECIMAL(12,2)
+AS
+BEGIN
+	DECLARE @precio DECIMAL(12,2)
+	IF NOT EXISTS (SELECT * FROM Composicion WHERE comp_producto = @producto)
+	BEGIN
+		SELECT @precio = prod_precio FROM Producto WHERE prod_codigo = @producto
+	END
+	ELSE
+	BEGIN
+		DECLARE @componente CHAR(8)
+		DECLARE @cantidad_componente INT
+		DECLARE c_producto CURSOR FOR SELECT comp_componente, comp_cantidad FROM Composicion WHERE comp_producto = @producto
+		OPEN c_producto
+		FETCH NEXT FROM c_producto INTO @componente, @cantidad_componente
+		WHILE @@FETCH_STATUS = 0
+		BEGIN
+			FETCH NEXT FROM c_producto INTO @componente, @cantidad_componente
+			SET @precio = @precio + dbo.f_precio_producto(@componente) * @cantidad_componente
+		END
+	END
+	RETURN @precio
+END

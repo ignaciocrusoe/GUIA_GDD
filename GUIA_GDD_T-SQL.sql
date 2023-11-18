@@ -516,3 +516,37 @@ BEGIN
 	END
 	RETURN @precio
 END
+
+/*EJERCICIO 16*/
+/* Desarrolle el/los elementos de base de datos necesarios para que ante una venta
+automaticamante se descuenten del stock los articulos vendidos. Se descontaran
+del deposito que mas producto poseea y se supone que el stock se almacena
+tanto de productos simples como compuestos (si se acaba el stock de los
+compuestos no se arman combos)
+En caso que no alcance el stock de un deposito se descontara del siguiente y asi
+hasta agotar los depositos posibles. En ultima instancia se dejara stock negativo
+en el ultimo deposito que se desconto.*/
+CREATE OR ALTER TRIGGER t_ventas_stock ON Factura AFTER INSERT
+AS
+BEGIN
+	DECLARE @cantidad INT
+	DECLARE @producto CHAR(8)
+	DECLARE @deposito CHAR(2)
+	DECLARE c_ventas CURSOR FOR SELECT item_producto item_cantidad FROM inserted
+								JOIN Item_Factura ON item_sucursal + item_tipo + item_numero = fact_sucursal + fact_tipo + fact_numero
+								
+	OPEN c_ventas
+	FETCH NEXT FROM c_ventas INTO @producto, @cantidad
+	WHILE @@FETCH_STATUS = 0
+	BEGIN
+		SET @deposito = (SELECT TOP 1 stoc_deposito
+					 FROM STOCK
+					 WHERE stoc_producto = @producto
+					 AND stoc_cantidad > @cantidad) 
+		UPDATE STOCK SET stoc_cantidad = stoc_cantidad - @cantidad
+		WHERE stoc_deposito = @deposito
+		FETCH NEXT FROM c_ventas INTO @producto, @cantidad
+	END
+	CLOSE c_ventas
+	DEALLOCATE c_ventas
+END

@@ -550,3 +550,45 @@ BEGIN
 	CLOSE c_ventas
 	DEALLOCATE c_ventas
 END
+
+/*EJERCICIO 17*/
+/*Sabiendo que el punto de reposicion del stock es la menor cantidad de ese objeto
+que se debe almacenar en el deposito y que el stock maximo es la maxima
+cantidad de ese producto en ese deposito, cree el/los objetos de base de datos
+necesarios para que dicha regla de negocio se cumpla automaticamente. No se
+conoce la forma de acceso a los datos ni el procedimiento por el cual se
+incrementa o descuenta stock.*/
+CREATE TRIGGER t_ ON STOCK FOR INSERT,UPDATE
+AS
+BEGIN
+	DECLARE @producto CHAR(8)
+	DECLARE	@deposito CHAR(8)
+	DECLARE	@cantidad DECIMAL (12,2)
+	DECLARE	@minimo DECIMAL (12,2)
+	DECLARE	@maximo DECIMAL (12,2)
+
+	DECLARE cursor_inserted CURSOR FOR SELECT stoc_producto,stoc_deposito, stoc_punto_reposicion, stoc_stock_maximo FROM inserted
+	OPEN cursor_inserted
+	FETCH NEXT FROM cursor_inserted
+	INTO @producto, @deposito, @cantidad, @minimo, @maximo
+	BEGIN TRANSACTION
+	WHILE @@FETCH_STATUS = 0
+	BEGIN
+		IF @cantidad > @maximo
+			BEGIN
+				PRINT 'Se está excediendo la cantidad maxima del producto ' + @producto + ' en el deposito ' + @deposito + ' por ' + STR(@cantidad - @maximo) + ' unidades. No se puede realizar la operacion'
+				ROLLBACK
+			END
+
+		ELSE IF @cantidad < @minimo
+			BEGIN
+				PRINT 'El producto ' + @producto + ' en el deposito ' + @deposito + ' se encuentra por debajo del minimo. Reponer!'
+			END
+		FETCH NEXT FROM cursor_inserted
+		INTO @producto, @deposito, @cantidad, @minimo, @maximo
+	END
+	COMMIT TRANSACTION
+	CLOSE cursor_inserted
+	DEALLOCATE cursor_inserted
+END
+GO
